@@ -3,4 +3,5 @@ uvicorn
 pandas
 xgboost
 openpyxl
+scikit-learn
 joblib
