@@ -5,3 +5,4 @@ xgboost
 openpyxl
 scikit-learn
 joblib
+python-multipart
