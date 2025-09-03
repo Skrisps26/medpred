@@ -1,13 +1,6 @@
-export type Patient = {
+export interface Patient {
   patientId: string
-  name: string
+  hadmId: string
   age?: number
-  gender?: string
-  diagnosis?: string
-  medicines?: string[] // parsed from comma-separated string if present
-  phone?: string
-  email?: string
-  note?: string
-  // stored as 0..1 (e.g., 0.23 for 23%)
-  deteriorationProbability90d?: number
+  prediction?: number
 }

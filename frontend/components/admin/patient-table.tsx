@@ -30,75 +30,38 @@ function ProbBadge({ value }: { value?: number }) {
 
 function DetailList({ patient }: { patient: Patient }) {
   return (
-    <dl className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div>
-        <dt className="text-xs text-muted-foreground">Patient ID</dt>
-        <dd className="font-medium">{patient.patientId}</dd>
-      </div>
-      <div>
-        <dt className="text-xs text-muted-foreground">Name</dt>
-        <dd className="font-medium">{patient.name}</dd>
+        <div className="text-xs text-muted-foreground">Patient ID</div>
+        <div className="font-medium">{patient.patientId}</div>
       </div>
       {patient.age != null && (
         <div>
-          <dt className="text-xs text-muted-foreground">Age</dt>
-          <dd className="font-medium">{patient.age}</dd>
-        </div>
-      )}
-      {patient.gender && (
-        <div>
-          <dt className="text-xs text-muted-foreground">Gender</dt>
-          <dd className="font-medium">{patient.gender}</dd>
-        </div>
-      )}
-      {patient.diagnosis && (
-        <div className="md:col-span-2">
-          <dt className="text-xs text-muted-foreground">Diagnosis</dt>
-          <dd className="font-medium">{patient.diagnosis}</dd>
+          <div className="text-xs text-muted-foreground">Age</div>
+          <div className="font-medium">{patient.age}</div>
         </div>
       )}
       <div>
-        <dt className="text-xs text-muted-foreground">90d Deterioration</dt>
-        <dd className="font-medium">
-          <ProbBadge value={patient.deteriorationProbability90d} />
-        </dd>
+        <div className="text-xs text-muted-foreground">90d Deterioration</div>
+        <div className="font-medium">
+          <ProbBadge value={patient.prediction} />
+        </div>
       </div>
-      {patient.medicines && patient.medicines.length > 0 && (
-        <div className="md:col-span-2">
-          <dt className="text-xs text-muted-foreground">Medicines</dt>
-          <dd className="flex flex-wrap gap-2">
-            {patient.medicines.map((m, i) => (
-              <span key={i} className="rounded bg-muted px-2 py-0.5 text-xs">
-                {m}
-              </span>
-            ))}
-          </dd>
-        </div>
-      )}
-      {patient.phone && (
-        <div>
-          <dt className="text-xs text-muted-foreground">Phone</dt>
-          <dd className="font-medium">{patient.phone}</dd>
-        </div>
-      )}
-      {patient.email && (
-        <div>
-          <dt className="text-xs text-muted-foreground">Email</dt>
-          <dd className="font-medium">{patient.email}</dd>
-        </div>
-      )}
-      {patient.note && (
-        <div className="md:col-span-2">
-          <dt className="text-xs text-muted-foreground">Notes</dt>
-          <dd className="font-medium">{patient.note}</dd>
-        </div>
-      )}
-    </dl>
+    </div>
   )
 }
 
 export function PatientTable() {
   const { patients, findById } = usePatients()
+
+  // Add detailed debug logging
+  React.useEffect(() => {
+    console.log('PatientTable: patients state updated:', {
+      length: patients.length,
+      data: patients
+    })
+  }, [patients])
+
   const [query, setQuery] = React.useState("")
   const [found, setFound] = React.useState<Patient | null>(null)
 
@@ -110,6 +73,11 @@ export function PatientTable() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Add debug info */}
+      <div className="text-sm text-muted-foreground">
+        Debug: {patients.length} patients in state
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Search by Patient ID</CardTitle>
@@ -143,17 +111,15 @@ export function PatientTable() {
           <TableHeader>
             <TableRow>
               <TableHead scope="col">Patient ID</TableHead>
-              <TableHead scope="col">Name</TableHead>
+              <TableHead scope="col">Hospital Admission ID</TableHead>
               <TableHead scope="col">Age</TableHead>
-              <TableHead scope="col">Diagnosis</TableHead>
-              <TableHead scope="col">Medicines</TableHead>
-              <TableHead scope="col">90d Probability</TableHead>
+              <TableHead scope="col">Prediction</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {patients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={4} className="text-center text-muted-foreground">
                   No data loaded. Upload an Excel file to see patients.
                 </TableCell>
               </TableRow>
@@ -161,29 +127,10 @@ export function PatientTable() {
               patients.map((p) => (
                 <TableRow key={p.patientId}>
                   <TableCell className="font-medium">{p.patientId}</TableCell>
-                  <TableCell>{p.name}</TableCell>
+                  <TableCell>{p.hadmId}</TableCell>
                   <TableCell>{p.age ?? "—"}</TableCell>
-                  <TableCell className="max-w-xl truncate" title={p.diagnosis}>
-                    {p.diagnosis ?? "—"}
-                  </TableCell>
-                  <TableCell className="max-w-xl">
-                    {p.medicines && p.medicines.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {p.medicines.slice(0, 4).map((m, i) => (
-                          <span key={i} className="rounded bg-muted px-2 py-0.5 text-xs">
-                            {m}
-                          </span>
-                        ))}
-                        {p.medicines.length > 4 && (
-                          <span className="text-xs text-muted-foreground">+{p.medicines.length - 4}</span>
-                        )}
-                      </div>
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
                   <TableCell>
-                    <ProbBadge value={p.deteriorationProbability90d} />
+                    <ProbBadge value={p.prediction} />
                   </TableCell>
                 </TableRow>
               ))

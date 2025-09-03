@@ -16,32 +16,10 @@ function normalizeKey(k: string): string {
 }
 
 function toPatient(row: RawRow): Patient | null {
-  const map: Record<string, keyof Patient | "prob"> = {
-    "patient id": "patientId",
-    id: "patientId",
-    patientid: "patientId",
-
-    name: "name",
-    "full name": "name",
-
-    age: "age",
-    gender: "gender",
-
-    diagnosis: "diagnosis",
-
-    medicines: "medicines",
-    "prescribed medicines": "medicines",
-
-    phone: "phone",
-    email: "email",
-    note: "note",
-    notes: "note",
-
-    "probability of deterioration in 90 days": "prob",
-    "deterioration probability 90d": "prob",
-    "probability 90d": "prob",
-    probability: "prob",
-    "risk score": "prob",
+  const map: Record<string, keyof Patient> = {
+    "subject_id": "patientId",
+    "hadm_id": "hadmId",
+    "predictions": "prediction",
   }
 
   const out: Partial<Patient> = {}
@@ -51,23 +29,11 @@ function toPatient(row: RawRow): Patient | null {
     const mapped = map[key]
     if (!mapped) continue
 
-    if (mapped === "prob") {
+    if (mapped === "prediction") {
       const num = typeof rawVal === "number" ? rawVal : Number.parseFloat(String(rawVal ?? ""))
       if (!Number.isNaN(num)) {
-        out.deteriorationProbability90d = num > 1 ? num / 100 : num
+        out.prediction = num > 1 ? num / 100 : num
       }
-    } else if (mapped === "medicines") {
-      if (Array.isArray(rawVal)) {
-        out.medicines = rawVal.map((x) => String(x))
-      } else if (rawVal != null) {
-        out.medicines = String(rawVal)
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean)
-      }
-    } else if (mapped === "age") {
-      const ageNum = typeof rawVal === "number" ? rawVal : Number.parseInt(String(rawVal ?? ""), 10)
-      if (!Number.isNaN(ageNum)) out.age = ageNum
     } else {
       if (rawVal != null && String(rawVal).trim() !== "") {
         ;(out as any)[mapped] = String(rawVal).trim()
@@ -75,7 +41,19 @@ function toPatient(row: RawRow): Patient | null {
     }
   }
 
-  if (!out.patientId || !out.name) return null
+  // Calculate age from DOB if present
+  if (row.dob) {
+    const dob = new Date(row.dob as string)
+    const today = new Date()
+    let age = today.getFullYear() - dob.getFullYear()
+    const m = today.getMonth() - dob.getMonth()
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--
+    }
+    out.age = age
+  }
+
+  if (!out.patientId || !out.hadmId) return null
   return out as Patient
 }
 
@@ -89,33 +67,63 @@ export function UploadExcel() {
     const file = e.target.files?.[0]
     if (!file) return
     setIsParsing(true)
+    
     try {
-      const data = await file.arrayBuffer()
-      const wb = XLSX.read(data, { type: "array" })
+      // First send file to prediction API
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("http://127.0.0.1:8000/predict/", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`)
+      }
+
+      const predictionBlob = await response.blob()
+      const predictionData = await predictionBlob.arrayBuffer()
+      const wb = XLSX.read(predictionData, { type: "array" })
       const firstSheet = wb.SheetNames[0]
       const ws = wb.Sheets[firstSheet]
       const rows = XLSX.utils.sheet_to_json<RawRow>(ws, { raw: true })
-      const parsed: Patient[] = rows.map(toPatient).filter((p): p is Patient => !!p)
+      
+      console.log('Raw Excel data:', rows) // Debug log
 
-      // Deduplicate by patientId
-      const byId = new Map<string, Patient>()
-      for (const p of parsed) {
-        byId.set(String(p.patientId).trim().toLowerCase(), p)
-      }
-      const merged = Array.from(byId.values())
+      const parsed: Patient[] = rows.map(row => {
+        const patient = {
+          patientId: String(row.subject_id),
+          hadmId: String(row.hadm_id),
+          age: row.aoa ? Number(row.aoa) : undefined,
+          prediction: row.prob_class_1 ? Number(row.prob_class_1):0.0,
+        }
+        console.log('Parsed patient:', patient) // Debug log for each patient
+        return patient
+      }).filter((p): p is Patient => 
+        p.patientId != null && 
+        p.hadmId != null
+      )
 
-      setPatients(merged)
+      console.log('Final parsed data:', parsed) // Debug final data
+      setPatients(parsed)
+      
+      // Show success message
       toast({
-        title: "Upload complete",
-        description: `Loaded ${merged.length} patients`,
+        title: "Predictions complete",
+        description: `Loaded ${parsed.length} patients with predictions`,
       })
+
+      // Clear the file input
       if (inputRef.current) inputRef.current.value = ""
+
     } catch (err: any) {
       toast({
-        title: "Failed to parse file",
-        description: err?.message ?? "Please check the file format.",
+        title: "Failed to process file",
+        description: err?.message ?? "Please check the file format or try again.",
         variant: "destructive",
       })
+      console.error("Error processing file:", err)
     } finally {
       setIsParsing(false)
     }
