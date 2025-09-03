@@ -73,7 +73,7 @@ export function UploadExcel() {
       const formData = new FormData()
       formData.append("file", file)
 
-      const response = await fetch('${API_URL}/predict/', {
+      const response = await fetch(`${API_URL}/predict/`, {
         method: "POST",
         body: formData,
       })
