@@ -47,7 +47,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 
 #Run the FastAPI server
-uvicorn app:app --reload
+uvicorn main:app --reload
 
 #Go to
 http://127.0.0.1:8000
