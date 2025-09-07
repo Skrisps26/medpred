@@ -25,6 +25,10 @@ export function PatientLookup() {
     const found = findById(patientId)
     setPatient(found ?? null)
     setSearched(true)
+    
+    // Debug logging
+    console.log('Search for ID:', patientId)
+    console.log('Found patient:', found)
   }
 
   return (
@@ -59,7 +63,7 @@ export function PatientLookup() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="rounded border p-3">
                   <div className="text-xs text-muted-foreground">Name</div>
-                  <div className="font-medium">{patient.name}</div>
+                  <div className="font-medium">{patient.name ?? "—"}</div>
                 </div>
                 <div className="rounded border p-3">
                   <div className="text-xs text-muted-foreground">Patient ID</div>
@@ -75,9 +79,9 @@ export function PatientLookup() {
             <section className="grid gap-2">
               <h3 className="text-lg font-semibold text-balance">90-day Deterioration Probability</h3>
               <div className="rounded border p-4">
-                <div className="text-3xl font-bold">{toPercent(patient.deteriorationProbability90d)}</div>
+                <div className="text-3xl font-bold">{toPercent(patient.prediction)}</div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  This value is provided by your care team’s analysis and is for informational purposes.
+                  This value is provided by your care team's analysis and is for informational purposes.
                 </p>
               </div>
             </section>

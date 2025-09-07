@@ -5,6 +5,7 @@ import xgboost as xgb
 import io
 import joblib
 from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
 
 model = xgb.XGBClassifier()
@@ -23,16 +24,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     # Example feature engineering steps
     from sklearn.preprocessing import LabelEncoder
 
     drop_cols = [
-    "row_id_x","row_id_y", "subject_id", "hadm_id",
-    "admittime", "dischtime", "deathtime", "dob", "dod", "dod_hosp", "dod_ssn",
-    "edregtime", "edouttime", "has_chartevents_data",
-    "diagnosis", "language", "religion", "ethnicity", "fluid_balance", "input_amt", "output_amt",
-    "expire_flag", "hospital_expire_flag","insurance",  #"dud", "admission_type"
+        "row_id_x","row_id_y", "subject_id", "hadm_id",
+        "admittime", "dischtime", "deathtime", "dob", "dod", "dod_hosp", "dod_ssn",
+        "edregtime", "edouttime", "has_chartevents_data",
+        "diagnosis", "language", "religion", "ethnicity", "fluid_balance", "input_amt", "output_amt",
+        "expire_flag", "hospital_expire_flag","insurance",  #"dud", "admission_type"
     ]
     
     comorb_cols = ['blood','circulatory','congenital','digestive','endocrine/metabolic',
@@ -59,11 +61,9 @@ async def predict(file: UploadFile = File(...)):
     elif filename.endswith(".xlsx"):
         df = pd.read_excel(io.BytesIO(contents), engine="openpyxl")
     elif filename.endswith(".xls"):
-
         df = pd.read_excel(io.BytesIO(contents), engine="xlrd")
     else:
         return {"error": "Unsupported file type. Please upload CSV or Excel."}
-
 
     X = feature_engineering(df)
 
