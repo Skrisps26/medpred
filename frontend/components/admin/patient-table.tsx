@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Label } from "@/components/ui/label"
+import { PageToggleButton } from "@/components/ui/page-toggle-button"
 import type { Patient } from "@/types/patient"
 
 function formatProb(prob?: number): string {
@@ -73,6 +74,12 @@ export function PatientTable() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Add the toggle button at the top */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Patient Management</h2>
+        <PageToggleButton />
+      </div>
+
       {/* Add debug info */}
       <div className="text-sm text-muted-foreground">
         Debug: {patients.length} patients in state
